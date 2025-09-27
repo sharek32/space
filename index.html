@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Love Among the Stars</title>
+    <style>
+        body {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(ellipse at center, #1a1a2e 0%, #0f0f23 100%);
+            overflow: hidden;
+            color: white;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #canvas {
+            display: block;
+            cursor: grab;
+        }
+
+        #canvas:active {
+            cursor: grabbing;
+        }
+
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            pointer-events: auto;
+            max-width: 300px;
+            border: 2px solid rgba(255, 105, 180, 0.3);
+        }
+
+        #info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            pointer-events: auto;
+            max-width: 350px;
+            min-height: 200px;
+            border: 2px solid rgba(255, 105, 180, 0.3);
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #FFB6C1;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        button {
+            background: linear-gradient(135deg, #FF69B4 0%, #FF1493 100%);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 105, 180, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 105, 180, 0.5);
+        }
+
+        button.active {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+        }
+
+        input[type="range"] {
+            flex: 1;
+            margin: 0 10px;
+        }
+
+        .speed-display {
+            font-size: 12px;
+            color: #FFB6C1;
+            min-width: 60px;
+        }
+
+        #celestialInfo h3 {
+            margin: 0 0 10px 0;
+            color: #FFB6C1;
+            font-size: 18px;
+        }
+
+        #celestialInfo p {
+            margin: 5px 0;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .metric {
+            background: rgba(255, 182, 193, 0.1);
+            padding: 12px;
+            border-radius: 10px;
+            margin: 8px 0;
+            border-left: 3px solid #FF69B4;
+        }
+
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            pointer-events: auto;
+            max-width: 400px;
+            font-size: 12px;
+            border: 2px solid rgba(255, 105, 180, 0.3);
+        }
+
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #FFB6C1, transparent),
+                radial-gradient(2px 2px at 40px 70px, rgba(255,215,0,0.8), transparent),
+                radial-gradient(1px 1px at 90px 40px, #FF69B4, transparent),
+                radial-gradient(1px 1px at 130px 80px, rgba(255,182,193,0.6), transparent),
+                radial-gradient(2px 2px at 160px 30px, #DDA0DD, transparent);
+            background-repeat: repeat;
+            background-size: 200px 100px;
+            animation: twinkle 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .heart-particle {
+            position: absolute;
+            color: #FF69B4;
+            font-size: 20px;
+            pointer-events: none;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.7; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background music -->
+    <audio id="bg-music" src="GoldenBrown.mp4" loop autoplay style="display:none;"></audio>
+    <div class="stars"></div>
+    <div class="heart-particle" style="top: 10%; left: 15%;">💖</div>
+    <div class="heart-particle" style="top: 20%; right: 20%; animation-delay: 1s;">💕</div>
+    <div class="heart-particle" style="bottom: 30%; left: 10%; animation-delay: 2s;">✨</div>
+    <div class="heart-particle" style="bottom: 15%; right: 15%; animation-delay: 0.5s;">💫</div>
+    
+    <div id="gameContainer">
+        <canvas id="canvas"></canvas>
+        
+        <div id="ui">
+            <div id="controls">
+                <div class="control-group">
+                    <label>💕 Our Universe</label>
+                    <div class="control-row">
+                        <button id="youBtn" class="active">You 💖</button>
+                        <button id="meBtn">Me 💙</button>
+                        <button id="dreamsBtn">Our Dreams ✨</button>
+                        <button id="overviewBtn">Together 🌌</button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>⏱️ Time of Love</label>
+                    <div class="control-row">
+                        <button id="pauseBtn">⏸️</button>
+                        <input type="range" id="speedSlider" min="0" max="100" value="20">
+                        <span class="speed-display" id="speedDisplay">1x</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label">💫 View Our Love</label>
+                    <div class="control-row">
+                        <button id="orbitsBtn">Show Paths</button>
+                        <button id="distanceBtn">Connection</button>
+                        <button id="physicsBtn">Love Force</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="info">
+                <div id="celestialInfo">
+                    <h3>💖 You</h3>
+                    <p><strong>Beauty:</strong> Infinite radiance</p>
+                    <p><strong>Distance:</strong> Always in my heart</p>
+                    <p><strong>Period:</strong> Every moment together</p>
+                    <p><strong>Essence:</strong> Pure magic</p>
+                    
+                    <div class="metric">
+                        <strong>💕 The Force of Love:</strong><br>
+                        You are the center of my universe, radiating warmth and beauty that lights up everything around you. Your gentle gravity pulls me closer with every passing day, creating the most beautiful dance of hearts.
+                    </div>
+                </div>
+            </div>
+
+            <div id="instructions">
+                <strong>💖 Navigate Our Love Story:</strong><br>
+                • <strong>Mouse:</strong> Explore our cosmic dance together<br>
+                • <strong>Scroll:</strong> Get closer to see our connection<br>
+                • <strong>Buttons:</strong> Focus on different aspects of us<br>
+                • <strong>Time:</strong> Watch how our love grows and moves<br>
+                • <strong>Options:</strong> See the invisible forces that bind us ✨
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class LoveAmongStars {
+            constructor() {
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.setupCanvas();
+                
+                // Camera and interaction
+                this.camera = { x: 0, y: 0, zoom: 1, rotation: 0 };
+                this.mouse = { x: 0, y: 0, down: false, lastX: 0, lastY: 0 };
+                this.target = null;
+                
+                // Time and animation
+                this.time = 0;
+                this.timeSpeed = 1;
+                this.paused = false;
+                
+                // Display options
+                this.showOrbits = true;
+                this.showDistances = false;
+                this.showPhysics = false;
+                
+                // Our celestial love story
+                this.bodies = {
+                    sun: { x: 0, y: 0, radius: 25, color: '#FFD700', name: 'Love\'s Light' },
+                    you: { 
+                        x: 200, y: 0, radius: 15, color: '#FF69B4', name: 'You',
+                        orbitRadius: 200, orbitSpeed: 1, angle: 0,
+                        info: {
+                            beauty: 'Infinite radiance',
+                            distance: 'Always in my heart',
+                            period: 'Every moment together',
+                            essence: 'Pure magic',
+                            description: 'You are the center of my universe, radiating warmth and beauty that lights up everything around you. Your gentle gravity pulls me closer with every passing day, creating the most beautiful dance of hearts.'
+                        }
+                    },
+                    me: { 
+                        x: 245, y: 0, radius: 10, color: '#87CEEB', name: 'Me',
+                        orbitRadius: 45, orbitSpeed: 6, angle: 0, parent: 'you',
+                        info: {
+                            devotion: 'Eternal',
+                            distance: 'Forever by your side',
+                            period: 'Always orbiting you',
+                            essence: 'Completely yours',
+                            description: 'I orbit around you like the moon around Earth, drawn by your incredible presence. You are my constant, my guiding star, the force that keeps me grounded yet helps me soar through life.'
+                        }
+                    },
+                    dreams: { 
+                        x: -320, y: 0, radius: 8, color: '#DDA0DD', name: 'Our Dreams',
+                        orbitRadius: 320, orbitSpeed: 0.7, angle: Math.PI,
+                        info: {
+                            beauty: 'Boundless possibilities',
+                            distance: 'Just within reach',
+                            period: 'Growing stronger each day',
+                            essence: 'Our shared future',
+                            description: 'Our dreams dance together in the distance, a beautiful world we\'re building together. Every day brings us closer to the life we envision, filled with love, laughter, and endless adventures.'
+                        }
+                    }
+                };
+                
+                this.selectedBody = 'you';
+                this.setupEventListeners();
+                this.updatePositions();
+                this.animate();
+            }
+            
+            setupCanvas() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                
+                window.addEventListener('resize', () => {
+                    this.canvas.width = window.innerWidth;
+                    this.canvas.height = window.innerHeight;
+                });
+            }
+            
+            setupEventListeners() {
+                // Mouse controls
+                this.canvas.addEventListener('mousedown', (e) => {
+                    this.mouse.down = true;
+                    this.mouse.lastX = e.clientX;
+                    this.mouse.lastY = e.clientY;
+                });
+                
+                this.canvas.addEventListener('mousemove', (e) => {
+                    if (this.mouse.down) {
+                        const deltaX = e.clientX - this.mouse.lastX;
+                        const deltaY = e.clientY - this.mouse.lastY;
+                        
+                        this.camera.rotation += deltaX * 0.01;
+                        this.camera.y += deltaY * 0.5;
+                        
+                        this.mouse.lastX = e.clientX;
+                        this.mouse.lastY = e.clientY;
+                    }
+                });
+                
+                this.canvas.addEventListener('mouseup', () => {
+                    this.mouse.down = false;
+                });
+                
+                this.canvas.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+                    this.camera.zoom = Math.max(0.1, Math.min(5, this.camera.zoom * zoomFactor));
+                });
+                
+                // UI Controls
+                document.getElementById('youBtn').addEventListener('click', () => this.focusOnBody('you'));
+                document.getElementById('meBtn').addEventListener('click', () => this.focusOnBody('me'));
+                document.getElementById('dreamsBtn').addEventListener('click', () => this.focusOnBody('dreams'));
+                document.getElementById('overviewBtn').addEventListener('click', () => this.focusOnBody('overview'));
+                
+                document.getElementById('pauseBtn').addEventListener('click', () => {
+                    this.paused = !this.paused;
+                    document.getElementById('pauseBtn').textContent = this.paused ? '▶️' : '⏸️';
+                });
+                
+                document.getElementById('speedSlider').addEventListener('input', (e) => {
+                    this.timeSpeed = parseFloat(e.target.value) / 20;
+                    document.getElementById('speedDisplay').textContent = `${this.timeSpeed.toFixed(1)}x`;
+                });
+                
+                document.getElementById('orbitsBtn').addEventListener('click', () => {
+                    this.showOrbits = !this.showOrbits;
+                    document.getElementById('orbitsBtn').classList.toggle('active');
+                });
+                
+                document.getElementById('distanceBtn').addEventListener('click', () => {
+                    this.showDistances = !this.showDistances;
+                    document.getElementById('distanceBtn').classList.toggle('active');
+                });
+                
+                document.getElementById('physicsBtn').addEventListener('click', () => {
+                    this.showPhysics = !this.showPhysics;
+                    document.getElementById('physicsBtn').classList.toggle('active');
+                });
+            }
+            
+            focusOnBody(bodyName) {
+                // Update active button
+                document.querySelectorAll('#controls button').forEach(btn => btn.classList.remove('active'));
+                
+                if (bodyName === 'overview') {
+                    document.getElementById('overviewBtn').classList.add('active');
+                    this.selectedBody = 'overview';
+                    this.camera.zoom = 0.6;
+                    this.camera.x = 0;
+                    this.camera.y = 0;
+                    this.target = null;
+                    this.updateInfo('overview');
+                } else {
+                    document.getElementById(bodyName + 'Btn').classList.add('active');
+                    this.selectedBody = bodyName;
+                    const body = this.bodies[bodyName];
+                    if (body) {
+                        this.camera.zoom = bodyName === 'me' ? 4 : 2.5;
+                        this.target = bodyName;
+                        this.updateInfo(bodyName);
+                    }
+                }
+            }
+            
+            updateInfo(bodyName) {
+                const infoDiv = document.getElementById('celestialInfo');
+                
+                if (bodyName === 'overview') {
+                    infoDiv.innerHTML = `
+                        <h3>🌌 Our Love Story</h3>
+                        <p><strong>Connection:</strong> Infinite and eternal</p>
+                        <p><strong>Distance:</strong> Hearts always together</p>
+                        <p><strong>Journey:</strong> Growing stronger every day</p>
+                        
+                        <div class="metric">
+                            <strong>💕 The Physics of Love:</strong><br>
+                            Just like celestial bodies are bound by gravity, we are connected by something even stronger - love. You are my center, my guiding force, and I am drawn to orbit around your beautiful presence, creating our own perfect cosmic dance.
+                        </div>
+                    `;
+                } else {
+                    const body = this.bodies[bodyName];
+                    const emoji = bodyName === 'you' ? '💖' : bodyName === 'me' ? '💙' : '✨';
+                    
+                    infoDiv.innerHTML = `
+                        <h3>${emoji} ${body.name}</h3>
+                        <p><strong>Beauty:</strong> ${body.info.beauty || body.info.devotion}</p>
+                        <p><strong>Distance:</strong> ${body.info.distance}</p>
+                        <p><strong>Period:</strong> ${body.info.period}</p>
+                        <p><strong>Essence:</strong> ${body.info.essence}</p>
+                        
+                        <div class="metric">
+                            <strong>💕 Love's Gravity:</strong><br>
+                            ${body.info.description}
+                        </div>
+                    `;
+                }
+            }
+            
+            updatePositions() {
+                // Update orbital positions
+                Object.keys(this.bodies).forEach(key => {
+                    const body = this.bodies[key];
+                    if (body.orbitRadius) {
+                        if (body.parent) {
+                            // I orbit around you
+                            const parent = this.bodies[body.parent];
+                            body.x = parent.x + Math.cos(body.angle) * body.orbitRadius;
+                            body.y = parent.y + Math.sin(body.angle) * body.orbitRadius;
+                        } else {
+                            // You and our dreams orbit around love's light
+                            body.x = Math.cos(body.angle) * body.orbitRadius;
+                            body.y = Math.sin(body.angle) * body.orbitRadius;
+                        }
+                        
+                        if (!this.paused) {
+                            body.angle += body.orbitSpeed * 0.01 * this.timeSpeed;
+                        }
+                    }
+                });
+            }
+            
+            draw() {
+                // Clear canvas with romantic gradient
+                const gradient = this.ctx.createRadialGradient(
+                    this.canvas.width/2, this.canvas.height/2, 0,
+                    this.canvas.width/2, this.canvas.height/2, Math.max(this.canvas.width, this.canvas.height)
+                );
+                gradient.addColorStop(0, 'rgba(25, 25, 50, 0.1)');
+                gradient.addColorStop(1, 'rgba(10, 10, 30, 0.1)');
+                this.ctx.fillStyle = gradient;
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                this.ctx.save();
+                
+                // Apply camera transform
+                this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
+                this.ctx.scale(this.camera.zoom, this.camera.zoom);
+                this.ctx.rotate(this.camera.rotation);
+                this.ctx.translate(-this.camera.x, -this.camera.y);
+                
+                // Follow target
+                if (this.target && this.bodies[this.target]) {
+                    const targetBody = this.bodies[this.target];
+                    this.camera.x += (targetBody.x - this.camera.x) * 0.05;
+                    this.camera.y += (targetBody.y - this.camera.y) * 0.05;
+                }
+                
+                // Draw love paths (orbits)
+                if (this.showOrbits) {
+                    this.ctx.strokeStyle = 'rgba(255, 182, 193, 0.4)';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.setLineDash([5, 10]);
+                    
+                    // Your orbit around love's light
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, this.bodies.you.orbitRadius, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                    
+                    // Our dreams' orbit
+                    this.ctx.beginPath();
+                    this.ctx.arc(0, 0, this.bodies.dreams.orbitRadius, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                    
+                    // My orbit around you
+                    this.ctx.strokeStyle = 'rgba(135, 206, 235, 0.4)';
+                    this.ctx.beginPath();
+                    this.ctx.arc(this.bodies.you.x, this.bodies.you.y, this.bodies.me.orbitRadius, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                    this.ctx.setLineDash([]);
+                }
+                
+                // Draw celestial bodies
+                Object.keys(this.bodies).forEach(key => {
+                    const body = this.bodies[key];
+                    
+                    // Create romantic glow
+                    const glowGradient = this.ctx.createRadialGradient(
+                        body.x, body.y, 0,
+                        body.x, body.y, body.radius * 3
+                    );
+                    glowGradient.addColorStop(0, body.color + 'AA');
+                    glowGradient.addColorStop(0.5, body.color + '44');
+                    glowGradient.addColorStop(1, 'transparent');
+                    
+                    this.ctx.fillStyle = glowGradient;
+                    this.ctx.beginPath();
+                    this.ctx.arc(body.x, body.y, body.radius * 3, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    // Main body with gradient
+                    const bodyGradient = this.ctx.createRadialGradient(
+                        body.x - body.radius/3, body.y - body.radius/3, 0,
+                        body.x, body.y, body.radius
+                    );
+                    bodyGradient.addColorStop(0, body.color);
+                    bodyGradient.addColorStop(1, body.color + 'CC');
+                    
+                    this.ctx.fillStyle = bodyGradient;
+                    this.ctx.beginPath();
+                    this.ctx.arc(body.x, body.y, body.radius, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    
+                    // Romantic sparkles
+                    if (key === 'you' || key === 'me') {
+                        for (let i = 0; i < 3; i++) {
+                            const sparkleX = body.x + (Math.random() - 0.5) * body.radius * 4;
+                            const sparkleY = body.y + (Math.random() - 0.5) * body.radius * 4;
+                            const sparkleSize = Math.random() * 2 + 1;
+                            
+                            this.ctx.fillStyle = '#FFD700';
+                            this.ctx.beginPath();
+                            this.ctx.arc(sparkleX, sparkleY, sparkleSize, 0, Math.PI * 2);
+                            this.ctx.fill();
+                        }
+                    }
+                    
+                    // Labels with hearts
+                    this.ctx.fillStyle = 'white';
+                    this.ctx.font = 'bold 14px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+                    this.ctx.lineWidth = 3;
+                    this.ctx.strokeText(body.name, body.x, body.y + body.radius + 20);
+                    this.ctx.fillText(body.name, body.x, body.y + body.radius + 20);
+                    
+                    // Connection lines
+                    if (this.showDistances && key !== 'sun') {
+                        this.ctx.strokeStyle = 'rgba(255, 182, 193, 0.6)';
+                        this.ctx.lineWidth = 2;
+                        this.ctx.setLineDash([3, 6]);
+                        this.ctx.beginPath();
+                        
+                        if (body.parent) {
+                            const parent = this.bodies[body.parent];
+                            this.ctx.moveTo(parent.x, parent.y);
+                            this.ctx.lineTo(body.x, body.y);
+                        } else {
+                            this.ctx.moveTo(0, 0);
+                            this.ctx.lineTo(body.x, body.y);
+                        }
+                        this.ctx.stroke();
+                        this.ctx.setLineDash([]);
+                    }
+                });
+                
+                // Love force vectors
+                if (this.showPhysics) {
+                    this.ctx.strokeStyle = '#FF69B4';
+                    this.ctx.lineWidth = 3;
+                    
+                    Object.keys(this.bodies).forEach(key => {
+                        const body = this.bodies[key];
+                        if (body.orbitSpeed) {
+                            // Love's pull vector
+                            const vx = -Math.sin(body.angle) * 40;
+                            const vy = Math.cos(body.angle) * 40;
+                            
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(body.x, body.y);
+                            this.ctx.lineTo(body.x + vx, body.y + vy);
+                            this.ctx.stroke();
+                            
+                            // Heart-shaped arrow
+                            const angle = Math.atan2(vy, vx);
+                            this.ctx.fillStyle = '#FF69B4';
+                            this.ctx.font = '16px Arial';
+                            this.ctx.fillText('💕', body.x + vx - 8, body.y + vy + 5);
+                        }
+                    });
+                }
+                
+                this.ctx.restore();
+            }
+            
+            animate() {
+                this.updatePositions();
+                this.draw();
+                this.time += this.timeSpeed;
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+        
+        // Initialize our love story
+        const loveStory = new LoveAmongStars();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'985d170786c78b01',t:'MTc1ODk5ODAxMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
